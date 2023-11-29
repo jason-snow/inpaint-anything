@@ -190,6 +190,8 @@ def run_sam(input_image, sam_model_id, sam_image, anime_style_chk=False):
 
     ia_logging.info(f"input_image: {input_image.shape} {input_image.dtype}")
 
+    print(ia_logging)
+
     try:
         sam_masks = inpalib.generate_sam_masks(input_image, sam_model_id, anime_style_chk)
         sam_masks = inpalib.sort_masks_by_area(sam_masks)
@@ -230,6 +232,14 @@ def select_mask(input_image, sam_image, invert_chk, ignore_black_chk, sel_mask):
     # image = sam_image["image"]
     mask = sam_image["mask"][:, :, 0:1]
 
+    Image.fromarray(input_image).save("./_input_image.png")
+    Image.fromarray(sam_image["mask"]).save("./_sam_image_mask.png")
+    Image.fromarray(sam_image["image"]).save("./_sam_image_image.png")
+
+    ## options
+    # Image.fromarray(invert_chk).save("./_invert_chk.png")  
+    # Image.fromarray(ignore_black_chk).save("./_ignore_black_chk.png")
+   
     try:
         seg_image = inpalib.create_mask_image(mask, sam_masks, ignore_black_chk)
         if invert_chk:
@@ -237,11 +247,15 @@ def select_mask(input_image, sam_image, invert_chk, ignore_black_chk, sel_mask):
 
         sam_dict["mask_image"] = seg_image
 
+        Image.fromarray(seg_image).save("./_seg_image.png")
+        Image.fromarray(sel_mask["mask"]).save("./_sel_mask_mask.png")
+        Image.fromarray(sel_mask["image"]).save("./_sel_mask_image.png")        
     except Exception as e:
         print(traceback.format_exc())
         ia_logging.error(str(e))
         ret_sel_mask = None if sel_mask is None else gr.update()
         return ret_sel_mask
+
 
     if input_image is not None and input_image.shape == seg_image.shape:
         ret_image = cv2.addWeighted(input_image, 0.5, seg_image, 0.5, 0)
@@ -354,10 +368,15 @@ def auto_resize_to_pil(input_image, mask_image):
 
     return init_image, mask_image
 
-
+#[heejun] masked inpaint call
 @clear_cache_decorator
 def run_inpaint(input_image, sel_mask, prompt, n_prompt, ddim_steps, cfg_scale, seed, inp_model_id, save_mask_chk, composite_chk,
                 sampler_name="DDIM", iteration_count=1):
+    
+    Image.fromarray(input_image).save("./_rip_input_image.png")
+    Image.fromarray(sel_mask["mask"]).save("./_rip_sel_mask_mask.png")
+    # Image.fromarray(sel_mask["image"]).save("./_rip_sel_mask_image.png")            
+
     global sam_dict
     if input_image is None or sam_dict["mask_image"] is None or sel_mask is None:
         ia_logging.error("The image or mask does not exist")
